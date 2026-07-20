@@ -25,19 +25,23 @@ manually if your organization's production calendar has holidays.
 
 ### Overtime categories & rate multipliers
 
-Each category has an editable pay-rate multiplier applied to the hourly rate:
-
-- **0010 — Overtime** (default **1.5x**): capped at **2h/day** and **12h/month**.
-  Hours reported beyond either cap are shown as unpaid excess (flagged as a
-  warning) rather than silently dropped.
+- **0010 — Overtime** (simple, fixed **1.0x** / straight-time): capped at
+  **2h/day** and **12h/month**. Hours reported beyond either cap are shown as
+  unpaid excess (flagged as a warning) rather than silently dropped.
 - **0030 — Weekend/holiday work** (**variable: 1.5x or 1.0x**, default 1.5x):
   policy now grants a compensatory day off by default rather than pay, so the
   rate is a selectable toggle — pick 1.0x for straight-time cash-outs, 1.5x
   for premium pay, or set it to 0 to model the no-payment/comp-off-only case.
-- **0040 — Night hours** (default **1.2x**).
+- **0040 — Night hours** (simple, fixed **1.0x** / straight-time).
 
-All defaults are editable — they are reasonable starting points, not fixed
-rules.
+0010 and 0040 are intentionally not editable in Settings — they're
+straight-time by policy. Only 0030 stays configurable. (The reverse
+calculator's rate field is still freely editable for what-if queries.)
+
+### Entering hours
+
+Overtime hours are entered in **30-minute steps** via a −/+ counter next to
+each day (typing a value snaps it to the nearest half hour).
 
 ### Tax
 
@@ -65,11 +69,22 @@ python3 -m http.server 8080
 # then visit http://localhost:8080
 ```
 
-1. Fill in **Settings** (salary, workdays, daily hours, tax rate, category
-   rate multipliers).
-2. Add day-by-day overtime entries under **Overtime → Pay**; totals, caps,
-   and net pay update live.
+1. Fill in **Settings** (salary, workdays, daily hours, tax rate, and the
+   0030 rate toggle).
+2. Add day-by-day overtime entries under **Overtime → Pay** using the
+   30-minute counter; totals, caps, and net pay update live.
 3. Use **Payment → Hours** to reverse-calculate hours from a known payment.
+
+## Hosting
+
+A GitHub Actions workflow (`.github/workflows/deploy-pages.yml`) deploys this
+static site to GitHub Pages on every push to
+`claude/overtime-earnings-calculator-yz5lso`. It uses the standard
+`actions/configure-pages` + `actions/upload-pages-artifact` +
+`actions/deploy-pages` flow, which provisions the Pages environment
+automatically on first run — no manual Settings step required beyond the
+repository allowing Actions to deploy to Pages (default for a repo's own
+workflows).
 
 ## Tests
 

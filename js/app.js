@@ -6,6 +6,7 @@
 
   var entries = []; // {id, date, category, hours}
   var nextId = 1;
+  var HOURS_STEP = 0.5; // 30-minute counter step
 
   // ---------- element refs ----------
   var el = {
@@ -16,9 +17,7 @@
     calcWeekdaysBtn: document.getElementById('calcWeekdaysBtn'),
     dailyHours: document.getElementById('dailyHours'),
     taxRatePercent: document.getElementById('taxRatePercent'),
-    rate0010: document.getElementById('rate0010'),
     rate0030: document.getElementById('rate0030'),
-    rate0040: document.getElementById('rate0040'),
     hourlyRateOut: document.getElementById('hourlyRateOut'),
 
     entriesBody: document.getElementById('entriesBody'),
@@ -63,18 +62,19 @@
       dailyHours: el.dailyHours.value,
       taxRatePercent: el.taxRatePercent.value,
       multipliers: {
-        '0010': el.rate0010.value,
+        '0010': CATEGORIES['0010'].defaultMultiplier,
         '0030': el.rate0030.value,
-        '0040': el.rate0040.value
+        '0040': CATEGORIES['0040'].defaultMultiplier
       }
     };
   }
 
   function multiplierForCategory(code) {
-    if (code === '0010') return Number(el.rate0010.value) || 0;
+    var cat = CATEGORIES[code];
+    if (!cat) return 0;
+    if (cat.multiplierMode === 'fixed') return cat.defaultMultiplier;
     if (code === '0030') return Number(el.rate0030.value) || 0;
-    if (code === '0040') return Number(el.rate0040.value) || 0;
-    return 0;
+    return cat.defaultMultiplier;
   }
 
   function categoryLabel(code) {
@@ -114,7 +114,7 @@
 
       tr.appendChild(makeCell('Date', makeDateInput(entry)));
       tr.appendChild(makeCell('Category', makeCategorySelect(entry)));
-      tr.appendChild(makeCell('Hours reported', makeHoursInput(entry)));
+      tr.appendChild(makeCell('Hours reported (30-min steps)', makeHoursCounter(entry)));
       tr.appendChild(makeCell('Hours payable', document.createTextNode(
         computed ? fmtHours(computed.payableHours) : '—'
       )));
@@ -178,17 +178,54 @@
     return select;
   }
 
-  function makeHoursInput(entry) {
+  function roundToStep(n) {
+    return Math.round(n / HOURS_STEP) * HOURS_STEP;
+  }
+
+  function makeHoursCounter(entry) {
+    var wrap = document.createElement('div');
+    wrap.className = 'hours-counter';
+
+    var minusBtn = document.createElement('button');
+    minusBtn.type = 'button';
+    minusBtn.className = 'counter-btn';
+    minusBtn.textContent = '−';
+    minusBtn.setAttribute('aria-label', 'Subtract 30 minutes');
+
     var input = document.createElement('input');
     input.type = 'number';
+    input.className = 'counter-value';
     input.min = '0';
-    input.step = 'any';
+    input.step = String(HOURS_STEP);
     input.value = entry.hours;
-    input.addEventListener('input', function () {
-      entry.hours = input.value;
+    input.inputMode = 'decimal';
+
+    var plusBtn = document.createElement('button');
+    plusBtn.type = 'button';
+    plusBtn.className = 'counter-btn';
+    plusBtn.textContent = '+';
+    plusBtn.setAttribute('aria-label', 'Add 30 minutes');
+
+    function commit(value) {
+      var n = Math.max(0, roundToStep(Number(value) || 0));
+      entry.hours = n;
       renderEntries();
+    }
+
+    minusBtn.addEventListener('click', function () {
+      commit((Number(input.value) || 0) - HOURS_STEP);
     });
-    return input;
+    plusBtn.addEventListener('click', function () {
+      commit((Number(input.value) || 0) + HOURS_STEP);
+    });
+    input.addEventListener('change', function () {
+      commit(input.value);
+    });
+
+    wrap.appendChild(minusBtn);
+    wrap.appendChild(input);
+    wrap.appendChild(plusBtn);
+    return wrap;
   }
 
   function renderWarnings(warnings) {
@@ -275,7 +312,7 @@
 
   ['input', 'change'].forEach(function (evt) {
     [el.monthlySalary, el.workdaysInMonth, el.dailyHours, el.taxRatePercent,
-     el.rate0010, el.rate0030, el.rate0040, el.currency, el.month].forEach(function (input) {
+     el.rate0030, el.currency, el.month].forEach(function (input) {
       input.addEventListener(evt, recalcAll);
     });
   });

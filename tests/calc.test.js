@@ -57,6 +57,15 @@ test('0030 and 0040 are not capped', function () {
   assert.equal(result.warnings.length, 0);
 });
 
+test('0010 and 0040 default to a simple 1.0x multiplier; 0030 stays variable', function () {
+  assert.equal(Calc.CATEGORIES['0010'].multiplierMode, 'fixed');
+  assert.equal(Calc.CATEGORIES['0010'].defaultMultiplier, 1.0);
+  assert.equal(Calc.CATEGORIES['0040'].multiplierMode, 'fixed');
+  assert.equal(Calc.CATEGORIES['0040'].defaultMultiplier, 1.0);
+  assert.equal(Calc.CATEGORIES['0030'].multiplierMode, 'variable');
+  assert.deepEqual(Calc.CATEGORIES['0030'].rateOptions, [1.5, 1.0]);
+});
+
 test('0030 multiplier is variable: 1.5x vs 1.0x changes pay', function () {
   var entries = [{ id: 1, date: '2026-07-04', category: '0030', hours: 4 }];
   var premium = Calc.processEntries(entries, { '0030': 1.5 }, 1000);

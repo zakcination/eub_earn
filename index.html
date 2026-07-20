@@ -51,9 +51,9 @@
     <h3>Rate multipliers by category</h3>
     <div class="grid">
       <div class="field">
-        <label for="rate0010">0010 — Overtime (Сверхурочные, 18:00–20:00)</label>
-        <input type="number" id="rate0010" min="0" step="any" value="1.5" />
-        <p class="hint">Capped at 2h/day and 12h/month.</p>
+        <label>0010 — Overtime (Сверхурочные, 18:00–20:00)</label>
+        <div class="fixed-rate-badge" id="rate0010Badge">1.0x (simple)</div>
+        <p class="hint">Straight-time. Capped at 2h/day and 12h/month.</p>
       </div>
       <div class="field">
         <label for="rate0030">0030 — Weekend/holiday (Работа в вых./праздн., 09:00–17:00)</label>
@@ -64,8 +64,9 @@
         <p class="hint">Policy now defaults to comp-time off — set 1.0x, or 0 if unpaid, when modeling that.</p>
       </div>
       <div class="field">
-        <label for="rate0040">0040 — Night hours (Ночные часы, 22:00–06:00)</label>
-        <input type="number" id="rate0040" min="0" step="any" value="1.2" />
+        <label>0040 — Night hours (Ночные часы, 22:00–06:00)</label>
+        <div class="fixed-rate-badge" id="rate0040Badge">1.0x (simple)</div>
+        <p class="hint">Straight-time.</p>
       </div>
     </div>
 
@@ -85,7 +86,7 @@
         <tr>
           <th>Date</th>
           <th>Category</th>
-          <th>Hours reported</th>
+          <th>Hours reported (30-min steps)</th>
           <th>Hours payable</th>
           <th>Multiplier</th>
           <th>Pay</th>

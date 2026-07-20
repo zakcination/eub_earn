@@ -19,32 +19,38 @@
       nameRu: 'Сверхурочные часы',
       nameEn: 'Overtime',
       window: '18:00–20:00',
-      defaultMultiplier: 1.5,
+      // Simple: straight-time, not editable in Settings.
+      multiplierMode: 'fixed',
+      defaultMultiplier: 1.0,
       dailyCapHours: 2,
       monthlyCapHours: 12,
-      fixedRateOptions: null
+      rateOptions: null
     },
     '0030': {
       code: '0030',
       nameRu: 'Работа в вых./праздн. (Отгул)',
       nameEn: 'Weekend / holiday work',
       window: '09:00–17:00',
+      // Variable: company policy now grants comp-time off by default; cash
+      // payment, when it happens, is at either premium (1.5x) or straight
+      // (1.0x) rate — user-selectable.
+      multiplierMode: 'variable',
       defaultMultiplier: 1.5,
       dailyCapHours: null,
       monthlyCapHours: null,
-      // Company policy now grants comp-time off by default; cash payment,
-      // when it happens, is at either premium (1.5x) or straight (1.0x) rate.
-      fixedRateOptions: [1.5, 1.0]
+      rateOptions: [1.5, 1.0]
     },
     '0040': {
       code: '0040',
       nameRu: 'Ночные часы',
       nameEn: 'Night hours',
       window: '22:00–06:00',
-      defaultMultiplier: 1.2,
+      // Simple: straight-time, not editable in Settings.
+      multiplierMode: 'fixed',
+      defaultMultiplier: 1.0,
       dailyCapHours: null,
       monthlyCapHours: null,
-      fixedRateOptions: null
+      rateOptions: null
     }
   };
 

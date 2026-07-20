@@ -119,6 +119,43 @@ th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: u
 
 td input, td select { padding: 0.35rem 0.4rem; }
 
+.fixed-rate-badge {
+  display: inline-block;
+  padding: 0.5rem 0.6rem;
+  background: #f1f3f5;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-weight: 600;
+  color: var(--muted);
+  width: fit-content;
+}
+
+.hours-counter {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.counter-btn {
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--highlight-bg);
+  color: var(--accent-dark);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.counter-btn:hover { background: #dcebfb; }
+.counter-btn:active { transform: scale(0.96); }
+
+.counter-value {
+  width: 4.5rem;
+  text-align: center;
+}
+
 .row-remove-btn {
   background: none;
   border: none;
