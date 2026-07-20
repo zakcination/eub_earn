@@ -20,7 +20,9 @@
 
   function toPlainEntries(entries) {
     return (entries || []).map(function (e) {
-      return { date: e.date, category: e.category, hours: e.hours };
+      var plain = { date: e.date, category: e.category, hours: e.hours };
+      if (e.rate != null) plain.rate = e.rate;
+      return plain;
     });
   }
 
@@ -28,6 +30,7 @@
   function buildFullState(fields) {
     return {
       version: STATE_VERSION,
+      year: fields.year,
       month: fields.month,
       currency: fields.currency,
       monthlySalary: fields.monthlySalary,

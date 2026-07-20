@@ -1,175 +1,242 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Overtime Earnings Calculator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Tally — калькулятор переработки</title>
 <link rel="icon" href="data:," />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-<header class="page-header">
-  <h1>Overtime Earnings Calculator</h1>
-  <p class="subtitle">Estimate pay for reported overtime, and work backwards from a payment to the hours it implies.</p>
+<div class="app-shell">
+
+  <header class="app-topbar">
+    <span class="app-title">Tally</span>
+    <span class="app-section-label" id="sectionLabel">Расчёт</span>
+  </header>
+
   <div class="toolbar">
-    <button type="button" id="shareBtn" class="btn-secondary">🔗 Share anonymized link</button>
-    <span class="hint">Your entries save automatically in this browser — nothing is sent anywhere.</span>
+    <button type="button" id="shareBtn" class="btn btn-secondary">🔗 Поделиться (аноним.)</button>
   </div>
   <div id="shareBox" class="share-box" hidden>
-    <div class="inline-input">
-      <input type="text" id="shareUrl" readonly />
-      <button type="button" id="copyShareBtn" class="btn-secondary">Copy</button>
+    <div class="share-box-row">
+      <input type="text" id="shareUrl" class="input" readonly />
+      <button type="button" id="copyShareBtn" class="btn btn-secondary">Копир.</button>
     </div>
-    <p class="hint">Includes only categories, dates, hours, workdays, daily hours, and tax rate — no salary, currency, or amounts.</p>
+    <p class="hint">Без оклада и валюты — только категории, даты, часы, ставки и рабочие дни.</p>
   </div>
-</header>
 
-<main>
+  <main class="app-scroll noscroll" id="scrollArea">
 
-  <!-- ============ SETTINGS ============ -->
-  <section class="card" id="settings-card">
-    <h2>1. Settings</h2>
-    <div class="grid">
-      <div class="field">
-        <label for="month">Month</label>
-        <input type="month" id="month" />
+    <!-- ═══════════ SETTINGS ═══════════ -->
+    <section id="tab-settings" class="tab-panel" hidden>
+      <div class="hero">
+        <div class="hero-kicker">Часовая ставка</div>
+        <div class="hero-number accent" id="hourlyHero">—</div>
+        <div class="hero-bar"></div>
+        <div class="hero-sub" id="formulaStr"></div>
       </div>
-      <div class="field">
-        <label for="currency">Currency label</label>
-        <input type="text" id="currency" placeholder="e.g. ₸, ₽, $" />
-      </div>
-      <div class="field">
-        <label for="monthlySalary">Monthly gross salary</label>
-        <input type="number" id="monthlySalary" min="0" step="any" placeholder="0" />
-      </div>
-      <div class="field">
-        <label for="workdaysInMonth">Workdays in month</label>
-        <div class="inline-input">
-          <input type="number" id="workdaysInMonth" min="1" step="1" placeholder="0" />
-          <button type="button" id="calcWeekdaysBtn" class="btn-secondary" title="Count Mon–Fri days for the selected month">Auto</button>
+
+      <div class="section-body" style="padding-top:0">
+        <div class="settings-card first">
+          <div class="field">
+            <label>Месяц</label>
+            <div class="month-nav">
+              <button type="button" class="month-nav-btn" id="prevMonthBtn" aria-label="previous month">&lsaquo;</button>
+              <span class="month-nav-label" id="monthLabel">—</span>
+              <button type="button" class="month-nav-btn" id="nextMonthBtn" aria-label="next month">&rsaquo;</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>Оклад до налога, в месяц</label>
+            <div class="input-suffix-wrap">
+              <input class="input" type="number" id="monthlySalary" min="0" inputmode="numeric" placeholder="напр. 450000" />
+              <span class="input-suffix" id="salaryCurSuffix"></span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Рабочих дней в месяце</label>
+            <div class="workdays-row">
+              <input class="input" type="number" id="workdaysInMonth" min="1" inputmode="numeric" />
+              <button type="button" class="btn btn-secondary" id="autoWorkdaysBtn">Авто &middot; <span id="autoCount">—</span></button>
+            </div>
+            <p class="hint" style="font-size:11px;color:var(--color-neutral-500);margin-top:6px">Считает пн&ndash;пт в выбранном месяце. Измените для праздников.</p>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Часов в день</label>
+              <input class="input" type="number" id="dailyHours" min="1" inputmode="decimal" />
+            </div>
+            <div class="field">
+              <label>Налог</label>
+              <div class="input-suffix-wrap">
+                <input class="input" type="number" id="taxRatePercent" min="0" max="100" inputmode="decimal" />
+                <span class="input-suffix">%</span>
+              </div>
+            </div>
+            <div class="field">
+              <label>Валюта</label>
+              <input class="input input-center" type="text" id="currency" maxlength="3" />
+            </div>
+          </div>
+        </div>
+
+        <div class="section-kicker">Ставки по категориям</div>
+        <div class="rates-card">
+          <div class="rate-row">
+            <div>
+              <div class="rate-name">Выходные и праздники <span class="code-badge">0030</span></div>
+              <div class="rate-meta">По умолчанию для новых &middot; 09:00&ndash;17:00</div>
+            </div>
+            <div class="seg" id="defaultRate0030Seg">
+              <button type="button" class="seg-btn" data-rate="1.5">1.5&times;</button>
+              <button type="button" class="seg-btn" data-rate="1">1.0&times;</button>
+            </div>
+          </div>
+          <div class="rate-row">
+            <div>
+              <div class="rate-name">Сверхурочные <span class="code-badge">0010</span></div>
+              <div class="rate-meta">Лимит 2&#8201;ч/день &middot; 12&#8201;ч/месяц &middot; 18:00&ndash;20:00</div>
+            </div>
+            <span class="fixed-badge">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>1.0&times; фикс.
+            </span>
+          </div>
+          <div class="rate-row">
+            <div>
+              <div class="rate-name">Ночные часы <span class="code-badge">0040</span></div>
+              <div class="rate-meta">22:00&ndash;06:00</div>
+            </div>
+            <span class="fixed-badge">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>1.0&times; фикс.
+            </span>
+          </div>
         </div>
       </div>
-      <div class="field">
-        <label for="dailyHours">Daily working hours</label>
-        <input type="number" id="dailyHours" min="1" step="any" value="9" />
-      </div>
-      <div class="field">
-        <label for="taxRatePercent">Tax rate (%)</label>
-        <input type="number" id="taxRatePercent" min="0" max="100" step="any" value="20" />
-      </div>
-    </div>
+    </section>
 
-    <h3>Rate multipliers by category</h3>
-    <div class="grid">
-      <div class="field">
-        <label>0010 — Overtime (Сверхурочные, 18:00–20:00)</label>
-        <div class="fixed-rate-badge" id="rate0010Badge">1.0x (simple)</div>
-        <p class="hint">Straight-time. Capped at 2h/day and 12h/month.</p>
-      </div>
-      <div class="field">
-        <label for="rate0030">0030 — Weekend/holiday (Работа в вых./праздн., 09:00–17:00)</label>
-        <select id="rate0030">
-          <option value="1.5" selected>1.5x (premium)</option>
-          <option value="1">1.0x (straight time)</option>
-        </select>
-        <p class="hint">Policy now defaults to comp-time off — set 1.0x, or 0 if unpaid, when modeling that.</p>
-      </div>
-      <div class="field">
-        <label>0040 — Night hours (Ночные часы, 22:00–06:00)</label>
-        <div class="fixed-rate-badge" id="rate0040Badge">1.0x (simple)</div>
-        <p class="hint">Straight-time.</p>
-      </div>
-    </div>
-
-    <div class="hourly-rate-display">
-      Hourly rate: <strong id="hourlyRateOut">—</strong>
-      <span class="hint">= monthly salary ÷ workdays in month ÷ daily hours</span>
-    </div>
-  </section>
-
-  <!-- ============ FORWARD: OVERTIME -> PAY ============ -->
-  <section class="card" id="forward-card">
-    <h2>2. Overtime → Pay</h2>
-    <p class="hint">Enter each day of overtime worked and its category. Caps and rates from Settings are applied automatically.</p>
-
-    <table id="entriesTable">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Category</th>
-          <th>Hours reported (30-min steps)</th>
-          <th>Hours payable</th>
-          <th>Multiplier</th>
-          <th>Pay</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="entriesBody"></tbody>
-    </table>
-    <button type="button" id="addRowBtn" class="btn-secondary">+ Add day</button>
-
-    <div id="warningsBox" class="warnings" hidden></div>
-
-    <table class="totals-table">
-      <thead>
-        <tr><th>Category</th><th>Payable hours</th><th>Pay</th></tr>
-      </thead>
-      <tbody id="categoryTotalsBody"></tbody>
-    </table>
-
-    <div class="summary">
-      <div><span>Total gross overtime</span><strong id="totalGrossOut">—</strong></div>
-      <div><span>Tax</span><strong id="taxAmountOut">—</strong></div>
-      <div class="highlight"><span>Net overtime</span><strong id="netOvertimeOut">—</strong></div>
-    </div>
-  </section>
-
-  <!-- ============ REVERSE: PAYMENT -> HOURS ============ -->
-  <section class="card" id="reverse-card">
-    <h2>3. Payment → Hours</h2>
-    <p class="hint">Given a payment amount, estimate how many overtime hours (at the selected category's rate) it corresponds to.</p>
-
-    <div class="grid">
-      <div class="field">
-        <label for="reverseAmount">Payment amount</label>
-        <input type="number" id="reverseAmount" min="0" step="any" placeholder="0" />
-      </div>
-      <div class="field">
-        <label>Amount is</label>
-        <div class="radio-group">
-          <label><input type="radio" name="reverseAmountType" value="net" checked /> Net (after tax)</label>
-          <label><input type="radio" name="reverseAmountType" value="gross" /> Gross (before tax)</label>
+    <!-- ═══════════ EARN ═══════════ -->
+    <section id="tab-earn" class="tab-panel">
+      <div class="hero sticky">
+        <div class="hero-kicker">
+          <span>Переработка чистыми &middot; <span id="earnMonthLabel">—</span></span>
+          <span class="hero-warn-inline" id="needsSalaryWarn" hidden>Укажите оклад в настройках</span>
+        </div>
+        <div class="hero-number" id="netHero">—</div>
+        <div class="hero-bar"></div>
+        <div class="hero-stats">
+          <span>Начислено <b id="grossStat">—</b></span>
+          <span>Налог <b id="taxStat">—</b></span>
         </div>
       </div>
-      <div class="field">
-        <label for="reverseCategory">Category</label>
-        <select id="reverseCategory">
-          <option value="0010">0010 — Overtime</option>
-          <option value="0030">0030 — Weekend/holiday</option>
-          <option value="0040">0040 — Night hours</option>
-        </select>
+
+      <div class="section-body">
+        <div id="chipsRow" class="chips-row"></div>
+        <div class="subtotal-bar" id="subtotalBar">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--color-neutral-500)" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+          <span id="subtotalStr"></span>
+        </div>
+        <div class="entries-list" id="entriesList"></div>
+        <button type="button" class="add-day-btn" id="addDayBtn"><span style="font-size:18px;line-height:0">+</span> Добавить день</button>
+
+        <div class="empty-state" id="emptyState" hidden>
+          <svg width="66" height="66" viewBox="0 0 24 24" fill="none" stroke="var(--color-neutral-700)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l3 3v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v4h4"/><line x1="8.5" y1="12" x2="15.5" y2="12"/><line x1="8.5" y1="15.5" x2="13" y2="15.5"/></svg>
+          <div class="empty-title">Пока нет записей</div>
+          <div class="empty-sub">Добавьте день, чтобы посчитать переработку. Кнопками &minus; / + меняйте шаг по 30 минут.</div>
+          <button type="button" class="empty-cta" id="emptyAddBtn"><span style="font-size:18px;line-height:0">+</span> Добавить первый день</button>
+        </div>
       </div>
-      <div class="field">
-        <label for="reverseMultiplier">Rate multiplier used</label>
-        <input type="number" id="reverseMultiplier" min="0" step="any" />
-        <p class="hint">Pre-filled from Settings for the chosen category; editable.</p>
+    </section>
+
+    <!-- ═══════════ REVERSE ═══════════ -->
+    <section id="tab-reverse" class="tab-panel" hidden>
+      <div class="hero">
+        <div class="hero-kicker">Расчётные часы</div>
+        <div class="hero-number" id="hoursHero">—</div>
+        <div class="hero-bar"></div>
+        <div class="hero-sub" id="revSubline"></div>
       </div>
-    </div>
 
-    <div class="summary">
-      <div><span>Hourly rate used</span><strong id="reverseHourlyRateOut">—</strong></div>
-      <div><span>Gross equivalent</span><strong id="reverseGrossOut">—</strong></div>
-      <div><span>Net equivalent</span><strong id="reverseNetOut">—</strong></div>
-      <div class="highlight"><span>Implied hours</span><strong id="reverseHoursOut">—</strong></div>
-    </div>
-    <p class="hint" id="reverseCapHint"></p>
-  </section>
+      <div class="section-body" style="padding-top:0">
+        <div class="settings-card first">
+          <div class="field">
+            <label>Сумма выплаты</label>
+            <div class="input-suffix-wrap">
+              <input class="input" type="number" id="reverseAmount" min="0" inputmode="decimal" placeholder="напр. 12000" />
+              <span class="input-suffix" id="reverseCurSuffix"></span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Эта сумма &mdash;</label>
+            <div class="seg seg-block" id="basisSeg">
+              <button type="button" class="seg-btn" data-basis="gross">Начислено</button>
+              <button type="button" class="seg-btn" data-basis="net">На руки (после налога)</button>
+            </div>
+          </div>
+          <div class="field-inline-end">
+            <div class="field">
+              <label>Категория</label>
+              <div class="category-display">
+                <span id="revCatName">&mdash;</span>
+                <svg class="category-display-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                <select class="category-select" id="reverseCategory" aria-label="category">
+                  <option value="0010">Сверхурочные</option>
+                  <option value="0030">Выходные и праздники</option>
+                  <option value="0040">Ночные часы</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label>Ставка</label>
+              <div class="seg" id="reverseRateSeg">
+                <button type="button" class="seg-btn" data-rate="1.5">1.5&times;</button>
+                <button type="button" class="seg-btn" data-rate="1">1.0&times;</button>
+              </div>
+            </div>
+          </div>
+        </div>
 
-</main>
+        <div class="breakdown-card" id="breakdownCard" hidden>
+          <div class="breakdown-kicker">Расшифровка</div>
+          <div class="breakdown-row"><span>Часовая ставка</span><span class="breakdown-leader"></span><span class="breakdown-val" id="hrUsed">&mdash;</span></div>
+          <div class="breakdown-row"><span>Начислено</span><span class="breakdown-leader"></span><span class="breakdown-val" id="revGrossStr">&mdash;</span></div>
+          <div class="breakdown-row"><span>На руки</span><span class="breakdown-leader"></span><span class="breakdown-val" id="revNetStr">&mdash;</span></div>
+          <div class="breakdown-divider"></div>
+          <div class="breakdown-hours-row">
+            <span class="breakdown-hours-label">Расчётные часы</span>
+            <span class="breakdown-hours-val" id="hoursSettled">&mdash;</span>
+          </div>
+          <div class="days-hint" id="daysHint" hidden>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent-300)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
+            <span id="daysHintText"></span>
+          </div>
+        </div>
+        <div class="no-amount-hint" id="noAmountHint">Введите сумму выплаты, чтобы узнать,<br />скольким часам переработки она равна.</div>
+      </div>
+    </section>
 
-<footer class="page-footer">
-  <p>Estimate only — not payroll or legal advice. Rate multipliers and caps are editable to match your organization's actual policy.</p>
-</footer>
+    <p class="disclaimer">Оценка, не бухгалтерская или юридическая консультация. Ставки и лимиты можно изменить под политику вашей организации.</p>
+  </main>
+
+  <nav class="bottom-nav">
+    <button type="button" class="nav-btn" data-tab="settings" id="navSettingsBtn">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="4" y1="8" x2="20" y2="8"/><circle cx="15" cy="8" r="2.4" fill="var(--color-bg)"/><line x1="4" y1="16" x2="20" y2="16"/><circle cx="9" cy="16" r="2.4" fill="var(--color-bg)"/></svg>
+      Настройки
+    </button>
+    <button type="button" class="nav-btn on" data-tab="earn" id="navEarnBtn">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6.5" rx="7" ry="3"/><path d="M5 6.5v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/><path d="M5 12.5v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"/></svg>
+      Расчёт
+    </button>
+    <button type="button" class="nav-btn" data-tab="reverse" id="navReverseBtn">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3.5-3.5M20 16H7l3.5 3.5"/></svg>
+      Обратный
+    </button>
+  </nav>
+
+</div>
 
 <script src="js/calc.js"></script>
 <script src="js/state.js"></script>

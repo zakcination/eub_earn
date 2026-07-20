@@ -16,7 +16,7 @@
   var CATEGORIES = {
     '0010': {
       code: '0010',
-      nameRu: 'Сверхурочные часы',
+      nameRu: 'Сверхурочные',
       nameEn: 'Overtime',
       window: '18:00–20:00',
       // Simple: straight-time, not editable in Settings.
@@ -28,7 +28,7 @@
     },
     '0030': {
       code: '0030',
-      nameRu: 'Работа в вых./праздн. (Отгул)',
+      nameRu: 'Выходные и праздники',
       nameEn: 'Weekend / holiday work',
       window: '09:00–17:00',
       // Variable: company policy now grants comp-time off by default; cash
@@ -82,8 +82,10 @@
 
   /**
    * Apply the 0010 daily (2h) / monthly (12h) caps and price every entry.
-   * entries: [{id, date, category, hours}], processed in date order so caps
-   * are consumed chronologically.
+   * entries: [{id, date, category, hours, rate}], processed in date order so
+   * caps are consumed chronologically. For a variable-rate category (0030),
+   * an entry's own `rate` (e.g. 1.5 or 1.0) overrides `multipliers[category]`
+   * — each entry can carry its own rate independent of the others.
    */
   function processEntries(entries, multipliers, hourlyRate) {
     var sorted = entries.slice().sort(function (a, b) {
@@ -99,20 +101,23 @@
     sorted.forEach(function (entry) {
       var cat = CATEGORIES[entry.category];
       var reportedHours = toNumber(entry.hours);
-      var multiplier = toNumber(multipliers[entry.category]);
+      var hasEntryRate = cat && cat.multiplierMode === 'variable' && entry.rate != null && entry.rate !== '';
+      var multiplier = hasEntryRate ? toNumber(entry.rate) : toNumber(multipliers[entry.category]);
       var payableHours = reportedHours;
       var excessHours = 0;
+      var excessDaily = 0;
+      var excessMonthly = 0;
 
       if (cat && cat.code === '0010') {
         var usedToday = dailyUsed[entry.date] || 0;
         var dailyRemaining = Math.max(cat.dailyCapHours - usedToday, 0);
         var afterDailyCap = Math.min(reportedHours, dailyRemaining);
-        var excessDaily = reportedHours - afterDailyCap;
+        excessDaily = reportedHours - afterDailyCap;
         dailyUsed[entry.date] = usedToday + afterDailyCap;
 
         var monthlyRemaining = Math.max(cat.monthlyCapHours - monthlyUsed, 0);
         payableHours = Math.min(afterDailyCap, monthlyRemaining);
-        var excessMonthly = afterDailyCap - payableHours;
+        excessMonthly = afterDailyCap - payableHours;
         monthlyUsed += payableHours;
 
         excessHours = excessDaily + excessMonthly;
@@ -140,6 +145,8 @@
         reportedHours: reportedHours,
         payableHours: payableHours,
         excessHours: excessHours,
+        excessDaily: excessDaily,
+        excessMonthly: excessMonthly,
         multiplier: multiplier,
         pay: pay
       });

@@ -5,7 +5,8 @@ var assert = require('node:assert/strict');
 var State = require('../js/state.js');
 
 var sampleFields = {
-  month: '2026-07',
+  year: 2026,
+  month: 6, // 0-indexed: July
   currency: '₸',
   monthlySalary: 396000,
   workdaysInMonth: 22,
@@ -14,7 +15,7 @@ var sampleFields = {
   rate0030: '1.5',
   entries: [
     { id: 1, date: '2026-07-06', category: '0010', hours: 2 },
-    { id: 2, date: '2026-07-04', category: '0030', hours: 4 }
+    { id: 2, date: '2026-07-04', category: '0030', hours: 4, rate: 1.0 }
   ]
 };
 
@@ -35,7 +36,7 @@ test('buildShareableState strips salary and currency but keeps everything else',
   assert.equal(shareable.rate0030, '1.5');
   assert.deepEqual(shareable.entries, [
     { date: '2026-07-06', category: '0010', hours: 2 },
-    { date: '2026-07-04', category: '0030', hours: 4 }
+    { date: '2026-07-04', category: '0030', hours: 4, rate: 1.0 }
   ]);
 });
 

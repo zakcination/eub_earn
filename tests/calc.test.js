@@ -44,6 +44,16 @@ test('0010 monthly cap limits total payable hours to 12h across days', function 
   var lastRow = result.rows[result.rows.length - 1];
   assert.equal(lastRow.payableHours, 0);
   assert.equal(lastRow.excessHours, 2);
+  assert.equal(lastRow.excessDaily, 0);
+  assert.equal(lastRow.excessMonthly, 2);
+});
+
+test('processEntries rows expose excessDaily/excessMonthly separately', function () {
+  var entries = [{ id: 1, date: '2026-07-06', category: '0010', hours: 3 }];
+  var result = Calc.processEntries(entries, { '0010': 1.0 }, 1000);
+  assert.equal(result.rows[0].excessDaily, 1);
+  assert.equal(result.rows[0].excessMonthly, 0);
+  assert.equal(result.rows[0].excessHours, 1);
 });
 
 test('0030 and 0040 are not capped', function () {
@@ -64,6 +74,26 @@ test('0010 and 0040 default to a simple 1.0x multiplier; 0030 stays variable', f
   assert.equal(Calc.CATEGORIES['0040'].defaultMultiplier, 1.0);
   assert.equal(Calc.CATEGORIES['0030'].multiplierMode, 'variable');
   assert.deepEqual(Calc.CATEGORIES['0030'].rateOptions, [1.5, 1.0]);
+});
+
+test('a 0030 entry\'s own rate overrides the settings default, independent of other entries', function () {
+  var entries = [
+    { id: 1, date: '2026-07-04', category: '0030', hours: 4, rate: 1.0 },
+    { id: 2, date: '2026-07-05', category: '0030', hours: 2 } // no per-entry rate -> falls back to default
+  ];
+  var result = Calc.processEntries(entries, { '0030': 1.5 }, 1000);
+  var byId = {};
+  result.rows.forEach(function (r) { byId[r.id] = r; });
+  assert.equal(byId[1].multiplier, 1.0);
+  assert.equal(byId[1].pay, 4 * 1000 * 1.0);
+  assert.equal(byId[2].multiplier, 1.5);
+  assert.equal(byId[2].pay, 2 * 1000 * 1.5);
+});
+
+test('a fixed-category entry\'s rate field is ignored (0010/0040 cannot be overridden per-entry)', function () {
+  var entries = [{ id: 1, date: '2026-07-06', category: '0010', hours: 1, rate: 1.5 }];
+  var result = Calc.processEntries(entries, { '0010': 1.0 }, 1000);
+  assert.equal(result.rows[0].multiplier, 1.0);
 });
 
 test('0030 multiplier is variable: 1.5x vs 1.0x changes pay', function () {
