@@ -82,6 +82,14 @@ category 0010 it also shows how many days that is at the 2h/day cap.
   salary/currency left blank for them to fill in with their own. The link is
   copied to your clipboard automatically (and shown in a text box as a
   fallback if clipboard access is blocked).
+- **Hide amounts**: the eye icon in the top bar (fintech-app style) masks
+  every money figure — hourly rate, net/gross/tax, per-entry pay, the
+  reverse-calculator breakdown — behind "•• •••" placeholders, and switches
+  the salary field to a password-style input, so nothing sensitive is
+  readable over your shoulder on a shared screen or office desktop. Hours,
+  dates, and categories stay visible since they aren't sensitive on their
+  own. The on/off state is remembered in `localStorage` (separately from
+  your data) so it stays off — or on — the way you left it.
 
 ## Usage
 

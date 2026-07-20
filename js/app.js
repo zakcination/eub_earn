@@ -12,10 +12,15 @@
   var HOURS_STEP = 0.5;
   var HOURS_MAX = 24;
 
+  var AMOUNTS_HIDDEN_KEY = 'eub_earn_amounts_hidden_v1';
+  var EYE_OPEN_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var EYE_OFF_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20"/><path d="M9.9 5.2A10.6 10.6 0 0 1 12 5c7 0 11 7 11 7a17.9 17.9 0 0 1-3.2 4"/><path d="M6.5 6.6A17.4 17.4 0 0 0 1 12s4 7 11 7a10.4 10.4 0 0 0 4.2-.9"/><path d="M9.5 9.8A3 3 0 0 0 12 15a3 3 0 0 0 2.2-.9"/></svg>';
+
   var nextId = 1;
   var state = {
     tab: 'earn',
     filter: 'all',
+    amountsHidden: false,
     settings: {
       year: 0, month: 0,
       currency: '₸',
@@ -35,6 +40,7 @@
   var el = {
     sectionLabel: document.getElementById('sectionLabel'),
     scrollArea: document.getElementById('scrollArea'),
+    toggleAmountsBtn: document.getElementById('toggleAmountsBtn'),
 
     shareBtn: document.getElementById('shareBtn'),
     shareBox: document.getElementById('shareBox'),
@@ -108,6 +114,13 @@
     if (dec === 0) return (neg ? '−' : '') + groupThousands(Math.round(n)) + cur;
     var parts = n.toFixed(dec).split('.');
     return (neg ? '−' : '') + groupThousands(parts[0]) + '.' + parts[1] + cur;
+  }
+
+  /** Display-context money: replaced with dots while amounts are hidden. */
+  function fmtMoneyOut(n, dec) {
+    if (!state.amountsHidden) return fmtMoney(n, dec);
+    var cur = state.settings.currency ? ' ' + state.settings.currency : '';
+    return '•• •••' + cur;
   }
 
   function fmtHours(h) {
@@ -272,16 +285,19 @@
   function renderSettingsTab() {
     var s = state.settings;
     var hr = hourlyRate();
-    el.hourlyHero.textContent = hr > 0 ? fmtMoney(hr) : '—';
+    el.hourlyHero.textContent = hr > 0 ? fmtMoneyOut(hr) : '—';
     el.formulaStr.textContent =
-      fmtMoney(Number(s.monthlySalary) || 0, 0) + '  ÷  ' + (Number(s.workdaysInMonth) || 0) +
+      fmtMoneyOut(Number(s.monthlySalary) || 0, 0) + '  ÷  ' + (Number(s.workdaysInMonth) || 0) +
       ' раб. дн.  ÷  ' + (Number(s.dailyHours) || 0) + ' ч';
     el.monthLabel.textContent = monthLabelStr();
     el.autoCount.textContent = String(Calc.weekdaysInMonth(s.year, s.month + 1));
     el.salaryCurSuffix.textContent = s.currency;
     el.reverseCurSuffix.textContent = s.currency;
 
-    if (document.activeElement !== el.monthlySalary) el.monthlySalary.value = s.monthlySalary;
+    if (document.activeElement !== el.monthlySalary) {
+      el.monthlySalary.value = s.monthlySalary;
+      el.monthlySalary.type = state.amountsHidden ? 'password' : 'number';
+    }
     if (document.activeElement !== el.workdaysInMonth) el.workdaysInMonth.value = s.workdaysInMonth;
     if (document.activeElement !== el.dailyHours) el.dailyHours.value = s.dailyHours;
     if (document.activeElement !== el.taxRatePercent) el.taxRatePercent.value = s.taxRatePercent;
@@ -347,7 +363,7 @@
     payCol.className = 'entry-pay-col';
     var payEl = document.createElement('div');
     payEl.className = 'entry-pay';
-    payEl.textContent = fmtMoney(row.pay);
+    payEl.textContent = fmtMoneyOut(row.pay);
     var multEl = document.createElement('div');
     multEl.className = 'entry-mult';
     multEl.textContent = fmtHours(row.payableHours) + ' × ' + rateLabel(row.multiplier);
@@ -463,9 +479,9 @@
 
     el.earnMonthLabel.textContent = monthLabelStr();
     el.needsSalaryWarn.hidden = hourlyRate() > 0;
-    el.grossStat.textContent = fmtMoney(summary.totalGrossOvertime, 0);
-    el.taxStat.textContent = '− ' + fmtMoney(summary.taxAmount, 0);
-    tween('netDisp', summary.netOvertime, function (v) { el.netHero.textContent = fmtMoney(v, 0); });
+    el.grossStat.textContent = fmtMoneyOut(summary.totalGrossOvertime, 0);
+    el.taxStat.textContent = '− ' + fmtMoneyOut(summary.taxAmount, 0);
+    tween('netDisp', summary.netOvertime, function (v) { el.netHero.textContent = fmtMoneyOut(v, 0); });
 
     var list = sortedEntries().map(function (e) { return { entry: e, row: rowsById[e.id] }; });
 
@@ -492,7 +508,7 @@
     var scope = state.filter === 'all' ? list : list.filter(function (x) { return x.entry.category === state.filter; });
     var scopePayable = scope.reduce(function (a, x) { return a + x.row.payableHours; }, 0);
     var scopePay = scope.reduce(function (a, x) { return a + x.row.pay; }, 0);
-    el.subtotalStr.textContent = scope.length + ' дн. · ' + fmtHours(scopePayable) + ' к оплате · ' + fmtMoney(scopePay);
+    el.subtotalStr.textContent = scope.length + ' дн. · ' + fmtHours(scopePayable) + ' к оплате · ' + fmtMoneyOut(scopePay);
 
     el.entriesList.innerHTML = '';
     scope.forEach(function (x) {
@@ -519,7 +535,7 @@
     });
 
     el.revSubline.textContent = amt > 0
-      ? ('из ' + fmtMoney(amt) + ' · ' + (r.basis === 'net' ? 'на руки (после налога)' : 'начислено'))
+      ? ('из ' + fmtMoneyOut(amt) + ' · ' + (r.basis === 'net' ? 'на руки (после налога)' : 'начислено'))
       : 'Введите сумму выплаты ниже';
 
     tween('hoursDisp', result.hours, function (v) { el.hoursHero.textContent = fmtHours(v); });
@@ -527,9 +543,9 @@
     el.breakdownCard.hidden = amt <= 0;
     el.noAmountHint.hidden = amt > 0;
     if (amt > 0) {
-      el.hrUsed.textContent = fmtMoney(hourlyRate());
-      el.revGrossStr.textContent = fmtMoney(result.grossPayment);
-      el.revNetStr.textContent = fmtMoney(result.netPayment);
+      el.hrUsed.textContent = fmtMoneyOut(hourlyRate());
+      el.revGrossStr.textContent = fmtMoneyOut(result.grossPayment);
+      el.revNetStr.textContent = fmtMoneyOut(result.netPayment);
       el.hoursSettled.textContent = fmtHours(result.hours);
       var isCapped = cfg.dailyCapHours != null;
       el.daysHint.hidden = !isCapped;
@@ -622,8 +638,33 @@
     }
   }
 
+  // ---------- amounts visibility (privacy) toggle ----------
+  function renderAmountsToggle() {
+    el.toggleAmountsBtn.innerHTML = state.amountsHidden ? EYE_OFF_SVG : EYE_OPEN_SVG;
+    el.toggleAmountsBtn.classList.toggle('on', state.amountsHidden);
+    el.toggleAmountsBtn.setAttribute('aria-pressed', String(state.amountsHidden));
+    el.toggleAmountsBtn.setAttribute('aria-label', state.amountsHidden ? 'Показать суммы' : 'Скрыть суммы');
+  }
+
+  function persistAmountsHidden() {
+    try {
+      window.localStorage.setItem(AMOUNTS_HIDDEN_KEY, state.amountsHidden ? '1' : '0');
+    } catch (e) {
+      // localStorage unavailable - best-effort only.
+    }
+  }
+
+  function loadAmountsHidden() {
+    try {
+      return window.localStorage.getItem(AMOUNTS_HIDDEN_KEY) === '1';
+    } catch (e) {
+      return false;
+    }
+  }
+
   // ---------- top-level render ----------
   function renderAll() {
+    renderAmountsToggle();
     renderSettingsTab();
     renderEarnTab();
     renderReverseTab();
@@ -694,6 +735,13 @@
     btn.addEventListener('click', function () { setTab(btn.dataset.tab); });
   });
 
+  // ---------- wiring: amounts visibility ----------
+  el.toggleAmountsBtn.addEventListener('click', function () {
+    state.amountsHidden = !state.amountsHidden;
+    persistAmountsHidden();
+    renderAll();
+  });
+
   // ---------- wiring: share ----------
   el.shareBtn.addEventListener('click', function () {
     var url = buildShareUrl();
@@ -710,6 +758,8 @@
 
   // ---------- init ----------
   (function init() {
+    state.amountsHidden = loadAmountsHidden();
+
     var today = new Date();
     state.settings.year = today.getFullYear();
     state.settings.month = today.getMonth();
