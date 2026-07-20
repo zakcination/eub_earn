@@ -6,8 +6,12 @@ re-engineered — the design pass is about layout, hierarchy, and styling on
 top of the flows and data described below.
 
 **Live reference (current, unstyled/default look):**
-https://zakcination.github.io/eub_earn/ (GitHub Pages, deploys from
-`claude/overtime-earnings-calculator-yz5lso` on every push)
+https://zakcination.github.io/eub_earn/ — GitHub Pages, auto-deployed by
+`.github/workflows/deploy-pages.yml` on every push. **Requires a one-time
+manual step**: repo Settings → Pages → Build and deployment → Source →
+"GitHub Actions" (the deploy workflow's token can't flip this on itself —
+GitHub rejects that API call from a workflow-scoped token). Until that's
+set, read the code directly or run `python3 -m http.server` locally.
 
 **Repo:** `zakcination/eub_earn` — `index.html` / `css/style.css` /
 `js/app.js` / `js/calc.js`

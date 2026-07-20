@@ -79,12 +79,17 @@ python3 -m http.server 8080
 
 A GitHub Actions workflow (`.github/workflows/deploy-pages.yml`) deploys this
 static site to GitHub Pages on every push to
-`claude/overtime-earnings-calculator-yz5lso`. It uses the standard
+`claude/overtime-earnings-calculator-yz5lso`, using the standard
 `actions/configure-pages` + `actions/upload-pages-artifact` +
-`actions/deploy-pages` flow, which provisions the Pages environment
-automatically on first run — no manual Settings step required beyond the
-repository allowing Actions to deploy to Pages (default for a repo's own
-workflows).
+`actions/deploy-pages` flow.
+
+**One-time manual step required:** GitHub does not let a workflow's own
+token turn Pages on for a repo (the "create Pages site" API call is
+rejected as "Resource not accessible by integration" even with
+`pages: write` + `enablement: true`). A repo admin needs to visit
+**Settings → Pages → Build and deployment → Source → "GitHub Actions"**
+once. After that, every push deploys automatically to
+`https://<owner>.github.io/eub_earn/`.
 
 ## Tests
 
