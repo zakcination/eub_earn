@@ -59,6 +59,20 @@ multiplier, the app grosses up net amounts (`gross = net / (1 - tax rate)`)
 and divides by `hourly rate * multiplier` to estimate the implied hours.
 For category 0010 it also shows how many days that is at the 2h/day cap.
 
+### Saving & anonymized sharing
+
+- **Autosave**: everything you enter (settings and entries) is saved to your
+  browser's `localStorage` on every change and restored automatically next
+  time you open the app. Nothing leaves your device for this — it's purely
+  local.
+- **Share anonymized link**: the "🔗 Share anonymized link" button builds a
+  URL encoding your dates, categories, hours, workdays, daily hours, and tax
+  rate — but **not** your salary or currency. A colleague who opens the link
+  gets that same template pre-filled, with salary/currency left blank for
+  them to fill in with their own. The link is copied to your clipboard
+  automatically (and shown in a text box as a fallback if clipboard access
+  is blocked).
+
 ## Usage
 
 No build step or server required — open `index.html` directly in a browser,
@@ -103,11 +117,13 @@ npm test
 ## Project structure
 
 ```
-index.html        UI markup
-css/style.css      styling
-js/calc.js         pure calculation logic (hourly rate, caps, summary, reverse calc)
-js/app.js          DOM wiring / rendering
-tests/calc.test.js unit tests for js/calc.js
+index.html         UI markup
+css/style.css       styling
+js/calc.js          pure calculation logic (hourly rate, caps, summary, reverse calc)
+js/state.js         local persistence + anonymized share-link encoding
+js/app.js           DOM wiring / rendering
+tests/calc.test.js  unit tests for js/calc.js
+tests/state.test.js unit tests for js/state.js
 ```
 
 ## Disclaimer

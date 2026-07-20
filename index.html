@@ -11,6 +11,17 @@
 <header class="page-header">
   <h1>Overtime Earnings Calculator</h1>
   <p class="subtitle">Estimate pay for reported overtime, and work backwards from a payment to the hours it implies.</p>
+  <div class="toolbar">
+    <button type="button" id="shareBtn" class="btn-secondary">🔗 Share anonymized link</button>
+    <span class="hint">Your entries save automatically in this browser — nothing is sent anywhere.</span>
+  </div>
+  <div id="shareBox" class="share-box" hidden>
+    <div class="inline-input">
+      <input type="text" id="shareUrl" readonly />
+      <button type="button" id="copyShareBtn" class="btn-secondary">Copy</button>
+    </div>
+    <p class="hint">Includes only categories, dates, hours, workdays, daily hours, and tax rate — no salary, currency, or amounts.</p>
+  </div>
 </header>
 
 <main>
@@ -161,6 +172,7 @@
 </footer>
 
 <script src="js/calc.js"></script>
+<script src="js/state.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

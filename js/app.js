@@ -2,6 +2,7 @@
   'use strict';
 
   var Calc = window.OvertimeCalc;
+  var State = window.OvertimeState;
   var CATEGORIES = Calc.CATEGORIES;
 
   var entries = []; // {id, date, category, hours}
@@ -35,7 +36,12 @@
     reverseGrossOut: document.getElementById('reverseGrossOut'),
     reverseNetOut: document.getElementById('reverseNetOut'),
     reverseHoursOut: document.getElementById('reverseHoursOut'),
-    reverseCapHint: document.getElementById('reverseCapHint')
+    reverseCapHint: document.getElementById('reverseCapHint'),
+
+    shareBtn: document.getElementById('shareBtn'),
+    shareBox: document.getElementById('shareBox'),
+    shareUrl: document.getElementById('shareUrl'),
+    copyShareBtn: document.getElementById('copyShareBtn')
   };
 
   // ---------- helpers ----------
@@ -99,6 +105,18 @@
     renderEntries();
   }
 
+  /** Replace all entries with a restored/imported list (fresh ids, no render). */
+  function loadEntries(list) {
+    entries = (list || []).map(function (e) {
+      return {
+        id: nextId++,
+        date: e.date || '',
+        category: e.category || '0010',
+        hours: e.hours || ''
+      };
+    });
+  }
+
   function renderEntries() {
     el.entriesBody.innerHTML = '';
 
@@ -138,6 +156,7 @@
 
     renderWarnings(processed.warnings);
     renderTotals(settings, hourlyRate, processed);
+    persistLocalState();
   }
 
   function makeCell(label, contentOrNode) {
@@ -268,6 +287,84 @@
     return div.innerHTML;
   }
 
+  // ---------- local persistence & anonymized sharing ----------
+  function collectStateFields() {
+    return {
+      month: el.month.value,
+      currency: el.currency.value,
+      monthlySalary: el.monthlySalary.value,
+      workdaysInMonth: el.workdaysInMonth.value,
+      dailyHours: el.dailyHours.value,
+      taxRatePercent: el.taxRatePercent.value,
+      rate0030: el.rate0030.value,
+      entries: entries
+    };
+  }
+
+  function persistLocalState() {
+    try {
+      var state = State.buildFullState(collectStateFields());
+      window.localStorage.setItem(State.STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+      // localStorage unavailable (private browsing, quota) - saving is best-effort.
+    }
+  }
+
+  function loadLocalState() {
+    try {
+      var raw = window.localStorage.getItem(State.STORAGE_KEY);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.entries)) return null;
+      return parsed;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function applyState(state, includeSalary) {
+    if (typeof state.month === 'string') el.month.value = state.month;
+    if (includeSalary) {
+      if (typeof state.currency === 'string') el.currency.value = state.currency;
+      if (state.monthlySalary != null) el.monthlySalary.value = state.monthlySalary;
+    }
+    if (state.workdaysInMonth != null) el.workdaysInMonth.value = state.workdaysInMonth;
+    if (state.dailyHours != null) el.dailyHours.value = state.dailyHours;
+    if (state.taxRatePercent != null) el.taxRatePercent.value = state.taxRatePercent;
+    if (state.rate0030 != null) el.rate0030.value = state.rate0030;
+    loadEntries(state.entries);
+  }
+
+  function parseShareFromLocation() {
+    var match = (window.location.hash || '').match(/[#&]s=([^&]+)/);
+    if (!match) return null;
+    return State.decodeState(decodeURIComponent(match[1]));
+  }
+
+  function clearShareHashFromUrl() {
+    var url = window.location.pathname + window.location.search;
+    window.history.replaceState(null, '', url);
+  }
+
+  function buildShareUrl() {
+    var shareable = State.buildShareableState(collectStateFields());
+    var encoded = State.encodeState(shareable);
+    return window.location.origin + window.location.pathname + '#s=' + encodeURIComponent(encoded);
+  }
+
+  function flashCopied(button, resetText) {
+    button.textContent = 'Copied!';
+    setTimeout(function () { button.textContent = resetText; }, 1500);
+  }
+
+  function copyText(text, button, resetText) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        flashCopied(button, resetText);
+      }).catch(function () { /* clipboard denied - the visible field is the fallback */ });
+    }
+  }
+
   // ---------- reverse calculator ----------
   function reverseAmountType() {
     var checked = document.querySelector('input[name="reverseAmountType"]:checked');
@@ -338,13 +435,38 @@
     r.addEventListener('change', renderReverse);
   });
 
+  el.shareBtn.addEventListener('click', function () {
+    var url = buildShareUrl();
+    el.shareUrl.value = url;
+    el.shareBox.hidden = false;
+    el.shareUrl.focus();
+    el.shareUrl.select();
+    copyText(url, el.shareBtn, '🔗 Share anonymized link');
+  });
+
+  el.copyShareBtn.addEventListener('click', function () {
+    el.shareUrl.select();
+    copyText(el.shareUrl.value, el.copyShareBtn, 'Copy');
+  });
+
   // ---------- init ----------
   (function init() {
-    var today = new Date();
-    el.month.value = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
-    el.workdaysInMonth.value = Calc.weekdaysInMonth(today.getFullYear(), today.getMonth() + 1);
+    var shared = parseShareFromLocation();
+    if (shared) {
+      applyState(shared, false);
+      clearShareHashFromUrl();
+    } else {
+      var saved = loadLocalState();
+      if (saved) {
+        applyState(saved, true);
+      } else {
+        var today = new Date();
+        el.month.value = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+        el.workdaysInMonth.value = Calc.weekdaysInMonth(today.getFullYear(), today.getMonth() + 1);
+        addRow({ date: '', category: '0010', hours: '' });
+      }
+    }
 
-    addRow({ date: '', category: '0010', hours: '' });
     syncReverseMultiplierDefault();
     recalcAll();
   })();
