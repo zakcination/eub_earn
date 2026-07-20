@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Overtime Earnings Calculator</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<header class="page-header">
+  <h1>Overtime Earnings Calculator</h1>
+  <p class="subtitle">Estimate pay for reported overtime, and work backwards from a payment to the hours it implies.</p>
+</header>
+
+<main>
+
+  <!-- ============ SETTINGS ============ -->
+  <section class="card" id="settings-card">
+    <h2>1. Settings</h2>
+    <div class="grid">
+      <div class="field">
+        <label for="month">Month</label>
+        <input type="month" id="month" />
+      </div>
+      <div class="field">
+        <label for="currency">Currency label</label>
+        <input type="text" id="currency" placeholder="e.g. ₸, ₽, $" />
+      </div>
+      <div class="field">
+        <label for="monthlySalary">Monthly gross salary</label>
+        <input type="number" id="monthlySalary" min="0" step="any" placeholder="0" />
+      </div>
+      <div class="field">
+        <label for="workdaysInMonth">Workdays in month</label>
+        <div class="inline-input">
+          <input type="number" id="workdaysInMonth" min="1" step="1" placeholder="0" />
+          <button type="button" id="calcWeekdaysBtn" class="btn-secondary" title="Count Mon–Fri days for the selected month">Auto</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="dailyHours">Daily working hours</label>
+        <input type="number" id="dailyHours" min="1" step="any" value="9" />
+      </div>
+      <div class="field">
+        <label for="taxRatePercent">Tax rate (%)</label>
+        <input type="number" id="taxRatePercent" min="0" max="100" step="any" value="20" />
+      </div>
+    </div>
+
+    <h3>Rate multipliers by category</h3>
+    <div class="grid">
+      <div class="field">
+        <label for="rate0010">0010 — Overtime (Сверхурочные, 18:00–20:00)</label>
+        <input type="number" id="rate0010" min="0" step="any" value="1.5" />
+        <p class="hint">Capped at 2h/day and 12h/month.</p>
+      </div>
+      <div class="field">
+        <label for="rate0030">0030 — Weekend/holiday (Работа в вых./праздн., 09:00–17:00)</label>
+        <select id="rate0030">
+          <option value="1.5" selected>1.5x (premium)</option>
+          <option value="1">1.0x (straight time)</option>
+        </select>
+        <p class="hint">Policy now defaults to comp-time off — set 1.0x, or 0 if unpaid, when modeling that.</p>
+      </div>
+      <div class="field">
+        <label for="rate0040">0040 — Night hours (Ночные часы, 22:00–06:00)</label>
+        <input type="number" id="rate0040" min="0" step="any" value="1.2" />
+      </div>
+    </div>
+
+    <div class="hourly-rate-display">
+      Hourly rate: <strong id="hourlyRateOut">—</strong>
+      <span class="hint">= monthly salary ÷ workdays in month ÷ daily hours</span>
+    </div>
+  </section>
+
+  <!-- ============ FORWARD: OVERTIME -> PAY ============ -->
+  <section class="card" id="forward-card">
+    <h2>2. Overtime → Pay</h2>
+    <p class="hint">Enter each day of overtime worked and its category. Caps and rates from Settings are applied automatically.</p>
+
+    <table id="entriesTable">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Category</th>
+          <th>Hours reported</th>
+          <th>Hours payable</th>
+          <th>Multiplier</th>
+          <th>Pay</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="entriesBody"></tbody>
+    </table>
+    <button type="button" id="addRowBtn" class="btn-secondary">+ Add day</button>
+
+    <div id="warningsBox" class="warnings" hidden></div>
+
+    <table class="totals-table">
+      <thead>
+        <tr><th>Category</th><th>Payable hours</th><th>Pay</th></tr>
+      </thead>
+      <tbody id="categoryTotalsBody"></tbody>
+    </table>
+
+    <div class="summary">
+      <div><span>Total gross overtime</span><strong id="totalGrossOut">—</strong></div>
+      <div><span>Tax</span><strong id="taxAmountOut">—</strong></div>
+      <div class="highlight"><span>Net overtime</span><strong id="netOvertimeOut">—</strong></div>
+    </div>
+  </section>
+
+  <!-- ============ REVERSE: PAYMENT -> HOURS ============ -->
+  <section class="card" id="reverse-card">
+    <h2>3. Payment → Hours</h2>
+    <p class="hint">Given a payment amount, estimate how many overtime hours (at the selected category's rate) it corresponds to.</p>
+
+    <div class="grid">
+      <div class="field">
+        <label for="reverseAmount">Payment amount</label>
+        <input type="number" id="reverseAmount" min="0" step="any" placeholder="0" />
+      </div>
+      <div class="field">
+        <label>Amount is</label>
+        <div class="radio-group">
+          <label><input type="radio" name="reverseAmountType" value="net" checked /> Net (after tax)</label>
+          <label><input type="radio" name="reverseAmountType" value="gross" /> Gross (before tax)</label>
+        </div>
+      </div>
+      <div class="field">
+        <label for="reverseCategory">Category</label>
+        <select id="reverseCategory">
+          <option value="0010">0010 — Overtime</option>
+          <option value="0030">0030 — Weekend/holiday</option>
+          <option value="0040">0040 — Night hours</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="reverseMultiplier">Rate multiplier used</label>
+        <input type="number" id="reverseMultiplier" min="0" step="any" />
+        <p class="hint">Pre-filled from Settings for the chosen category; editable.</p>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div><span>Hourly rate used</span><strong id="reverseHourlyRateOut">—</strong></div>
+      <div><span>Gross equivalent</span><strong id="reverseGrossOut">—</strong></div>
+      <div><span>Net equivalent</span><strong id="reverseNetOut">—</strong></div>
+      <div class="highlight"><span>Implied hours</span><strong id="reverseHoursOut">—</strong></div>
+    </div>
+    <p class="hint" id="reverseCapHint"></p>
+  </section>
+
+</main>
+
+<footer class="page-footer">
+  <p>Estimate only — not payroll or legal advice. Rate multipliers and caps are editable to match your organization's actual policy.</p>
+</footer>
+
+<script src="js/calc.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
