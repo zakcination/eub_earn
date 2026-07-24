@@ -37,7 +37,7 @@
     <!-- ═══════════ SETTINGS ═══════════ -->
     <section id="tab-settings" class="tab-panel" hidden>
       <div class="hero">
-        <div class="hero-kicker">Часовая ставка</div>
+        <div class="hero-kicker">Часовая ставка <span id="hourlyBasisLabel"></span></div>
         <div class="hero-number accent" id="hourlyHero">—</div>
         <div class="hero-bar"></div>
         <div class="hero-sub" id="formulaStr"></div>
@@ -54,10 +54,14 @@
             </div>
           </div>
           <div class="field">
-            <label>Оклад до налога, в месяц</label>
+            <label>Оклад, в месяц</label>
             <div class="input-suffix-wrap">
               <input class="input" type="number" id="monthlySalary" min="0" inputmode="numeric" placeholder="напр. 450000" />
               <span class="input-suffix" id="salaryCurSuffix"></span>
+            </div>
+            <div class="seg seg-block" id="salaryBasisSeg" style="margin-top:8px">
+              <button type="button" class="seg-btn" data-basis="gross">До вычета</button>
+              <button type="button" class="seg-btn" data-basis="net">На руки</button>
             </div>
           </div>
           <div class="field">
@@ -204,7 +208,7 @@
 
         <div class="breakdown-card" id="breakdownCard" hidden>
           <div class="breakdown-kicker">Расшифровка</div>
-          <div class="breakdown-row"><span>Часовая ставка</span><span class="breakdown-leader"></span><span class="breakdown-val" id="hrUsed">&mdash;</span></div>
+          <div class="breakdown-row"><span>Часовая ставка <span id="revHourlyBasisLabel" style="font-size:10px;color:var(--color-neutral-500)"></span></span><span class="breakdown-leader"></span><span class="breakdown-val" id="hrUsed">&mdash;</span></div>
           <div class="breakdown-row"><span>Начислено</span><span class="breakdown-leader"></span><span class="breakdown-val" id="revGrossStr">&mdash;</span></div>
           <div class="breakdown-row"><span>На руки</span><span class="breakdown-leader"></span><span class="breakdown-val" id="revNetStr">&mdash;</span></div>
           <div class="breakdown-divider"></div>

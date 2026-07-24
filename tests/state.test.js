@@ -9,6 +9,7 @@ var sampleFields = {
   month: 6, // 0-indexed: July
   currency: '₸',
   monthlySalary: 396000,
+  salaryBasis: 'net',
   workdaysInMonth: 22,
   dailyHours: 9,
   taxRatePercent: 20,
@@ -23,13 +24,15 @@ test('buildFullState keeps salary and currency', function () {
   var full = State.buildFullState(sampleFields);
   assert.equal(full.monthlySalary, 396000);
   assert.equal(full.currency, '₸');
+  assert.equal(full.salaryBasis, 'net');
   assert.equal(full.entries.length, 2);
 });
 
-test('buildShareableState strips salary and currency but keeps everything else', function () {
+test('buildShareableState strips salary and currency but keeps everything else, including salaryBasis', function () {
   var shareable = State.buildShareableState(sampleFields);
   assert.equal('monthlySalary' in shareable, false);
   assert.equal('currency' in shareable, false);
+  assert.equal(shareable.salaryBasis, 'net');
   assert.equal(shareable.taxRatePercent, 20);
   assert.equal(shareable.workdaysInMonth, 22);
   assert.equal(shareable.dailyHours, 9);

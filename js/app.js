@@ -25,6 +25,7 @@
       year: 0, month: 0,
       currency: '₸',
       monthlySalary: '',
+      salaryBasis: 'gross',
       workdaysInMonth: '',
       dailyHours: '9',
       taxRatePercent: '20',
@@ -55,12 +56,14 @@
     navReverseBtn: document.getElementById('navReverseBtn'),
 
     hourlyHero: document.getElementById('hourlyHero'),
+    hourlyBasisLabel: document.getElementById('hourlyBasisLabel'),
     formulaStr: document.getElementById('formulaStr'),
     prevMonthBtn: document.getElementById('prevMonthBtn'),
     nextMonthBtn: document.getElementById('nextMonthBtn'),
     monthLabel: document.getElementById('monthLabel'),
     monthlySalary: document.getElementById('monthlySalary'),
     salaryCurSuffix: document.getElementById('salaryCurSuffix'),
+    salaryBasisSeg: document.getElementById('salaryBasisSeg'),
     workdaysInMonth: document.getElementById('workdaysInMonth'),
     autoWorkdaysBtn: document.getElementById('autoWorkdaysBtn'),
     autoCount: document.getElementById('autoCount'),
@@ -92,6 +95,7 @@
     reverseRateSeg: document.getElementById('reverseRateSeg'),
     breakdownCard: document.getElementById('breakdownCard'),
     hrUsed: document.getElementById('hrUsed'),
+    revHourlyBasisLabel: document.getElementById('revHourlyBasisLabel'),
     revGrossStr: document.getElementById('revGrossStr'),
     revNetStr: document.getElementById('revNetStr'),
     hoursSettled: document.getElementById('hoursSettled'),
@@ -168,13 +172,15 @@
       workdaysInMonth: state.settings.workdaysInMonth,
       dailyHours: state.settings.dailyHours,
       taxRatePercent: state.settings.taxRatePercent,
+      salaryBasis: state.settings.salaryBasis,
       multipliers: multipliersForCalc()
     });
   }
 
   function reverseResult() {
     return Calc.reverseCalculate(
-      state.reverse.amount, state.reverse.basis, hourlyRate(), state.reverse.rate, state.settings.taxRatePercent
+      state.reverse.amount, state.reverse.basis, hourlyRate(), state.reverse.rate,
+      state.settings.taxRatePercent, state.settings.salaryBasis
     );
   }
 
@@ -286,6 +292,7 @@
     var s = state.settings;
     var hr = hourlyRate();
     el.hourlyHero.textContent = hr > 0 ? fmtMoneyOut(hr) : '—';
+    el.hourlyBasisLabel.textContent = s.salaryBasis === 'net' ? '(на руки)' : '(до вычета)';
     el.formulaStr.textContent =
       fmtMoneyOut(Number(s.monthlySalary) || 0, 0) + '  ÷  ' + (Number(s.workdaysInMonth) || 0) +
       ' раб. дн.  ÷  ' + (Number(s.dailyHours) || 0) + ' ч';
@@ -305,6 +312,9 @@
 
     Array.prototype.forEach.call(el.defaultRate0030Seg.querySelectorAll('.seg-btn'), function (btn) {
       btn.classList.toggle('on', Number(btn.dataset.rate) === Number(s.rate0030));
+    });
+    Array.prototype.forEach.call(el.salaryBasisSeg.querySelectorAll('.seg-btn'), function (btn) {
+      btn.classList.toggle('on', btn.dataset.basis === s.salaryBasis);
     });
   }
 
@@ -544,6 +554,7 @@
     el.noAmountHint.hidden = amt > 0;
     if (amt > 0) {
       el.hrUsed.textContent = fmtMoneyOut(hourlyRate());
+      el.revHourlyBasisLabel.textContent = state.settings.salaryBasis === 'net' ? '(на руки)' : '(до вычета)';
       el.revGrossStr.textContent = fmtMoneyOut(result.grossPayment);
       el.revNetStr.textContent = fmtMoneyOut(result.netPayment);
       el.hoursSettled.textContent = fmtHours(result.hours);
@@ -562,6 +573,7 @@
       month: state.settings.month,
       currency: state.settings.currency,
       monthlySalary: state.settings.monthlySalary,
+      salaryBasis: state.settings.salaryBasis,
       workdaysInMonth: state.settings.workdaysInMonth,
       dailyHours: state.settings.dailyHours,
       taxRatePercent: state.settings.taxRatePercent,
@@ -599,6 +611,7 @@
       if (typeof saved.currency === 'string') s.currency = saved.currency;
       if (saved.monthlySalary != null) s.monthlySalary = saved.monthlySalary;
     }
+    if (saved.salaryBasis === 'net' || saved.salaryBasis === 'gross') s.salaryBasis = saved.salaryBasis;
     if (saved.workdaysInMonth != null) s.workdaysInMonth = saved.workdaysInMonth;
     if (saved.dailyHours != null) s.dailyHours = saved.dailyHours;
     if (saved.taxRatePercent != null) s.taxRatePercent = saved.taxRatePercent;
@@ -703,6 +716,13 @@
   Array.prototype.forEach.call(el.defaultRate0030Seg.querySelectorAll('.seg-btn'), function (btn) {
     btn.addEventListener('click', function () {
       state.settings.rate0030 = Number(btn.dataset.rate);
+      renderAll();
+    });
+  });
+
+  Array.prototype.forEach.call(el.salaryBasisSeg.querySelectorAll('.seg-btn'), function (btn) {
+    btn.addEventListener('click', function () {
+      state.settings.salaryBasis = btn.dataset.basis;
       renderAll();
     });
   });

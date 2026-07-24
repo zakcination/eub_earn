@@ -126,6 +126,40 @@ test('computeSummary totals pay across categories and applies tax', function () 
   assert.ok(Math.abs(summary.netOvertime - expectedGross * 0.8) < 1e-9);
 });
 
+test('computeSummary treats monthlySalary as net when salaryBasis is "net", grossing up the total', function () {
+  var entries = [
+    { id: 1, date: '2026-07-01', category: '0010', hours: 2 },
+    { id: 2, date: '2026-07-04', category: '0030', hours: 4 },
+    { id: 3, date: '2026-07-05', category: '0040', hours: 3 }
+  ];
+  var settings = {
+    monthlySalary: 396000,
+    workdaysInMonth: 22,
+    dailyHours: 9,
+    taxRatePercent: 20,
+    salaryBasis: 'net',
+    multipliers: { '0010': 1.5, '0030': 1.5, '0040': 1.2 }
+  };
+  var summary = Calc.computeSummary(entries, settings);
+  var hourlyRate = 396000 / 22 / 9; // = 2000, now a NET hourly rate
+  var expectedNet = 2 * hourlyRate * 1.5 + 4 * hourlyRate * 1.5 + 3 * hourlyRate * 1.2;
+  assert.ok(Math.abs(summary.netOvertime - expectedNet) < 1e-9);
+  assert.ok(Math.abs(summary.totalGrossOvertime - expectedNet / 0.8) < 1e-9);
+  assert.ok(Math.abs(summary.taxAmount - (expectedNet / 0.8 - expectedNet)) < 1e-9);
+});
+
+test('computeSummary defaults to gross basis when salaryBasis is omitted (backward compatible)', function () {
+  var entries = [{ id: 1, date: '2026-07-01', category: '0010', hours: 2 }];
+  var settings = {
+    monthlySalary: 396000, workdaysInMonth: 22, dailyHours: 9, taxRatePercent: 20,
+    multipliers: { '0010': 1.5 }
+  };
+  var withDefault = Calc.computeSummary(entries, settings);
+  var withExplicitGross = Calc.computeSummary(entries, Object.assign({}, settings, { salaryBasis: 'gross' }));
+  assert.equal(withDefault.totalGrossOvertime, withExplicitGross.totalGrossOvertime);
+  assert.equal(withDefault.netOvertime, withExplicitGross.netOvertime);
+});
+
 test('reverseCalculate grosses up a net payment before dividing by pay-per-hour', function () {
   var result = Calc.reverseCalculate(1200, 'net', 1000, 1.5, 20);
   // net 1200 -> gross 1500 -> hours = 1500 / (1000*1.5) = 1
@@ -138,6 +172,20 @@ test('reverseCalculate treats a gross payment directly', function () {
   assert.ok(Math.abs(result.grossPayment - 3000) < 1e-9);
   assert.ok(Math.abs(result.netPayment - 2400) < 1e-9);
   assert.ok(Math.abs(result.hours - 2) < 1e-9);
+});
+
+test('reverseCalculate divides the matching-basis amount when hourlyRateBasis is "net"', function () {
+  // hourlyRate here is a NET hourly rate (1000); a gross payment of 1500
+  // is worth 1200 net at 20% tax, so hours = 1200 / (1000*1) = 1.2
+  var result = Calc.reverseCalculate(1500, 'gross', 1000, 1, 20, 'net');
+  assert.ok(Math.abs(result.netPayment - 1200) < 1e-9);
+  assert.ok(Math.abs(result.hours - 1.2) < 1e-9);
+});
+
+test('reverseCalculate defaults hourlyRateBasis to gross when omitted', function () {
+  var withDefault = Calc.reverseCalculate(3000, 'gross', 1000, 1.5, 20);
+  var withExplicitGross = Calc.reverseCalculate(3000, 'gross', 1000, 1.5, 20, 'gross');
+  assert.equal(withDefault.hours, withExplicitGross.hours);
 });
 
 test('forward and reverse calculations round-trip', function () {

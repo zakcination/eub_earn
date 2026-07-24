@@ -34,6 +34,7 @@
       month: fields.month,
       currency: fields.currency,
       monthlySalary: fields.monthlySalary,
+      salaryBasis: fields.salaryBasis,
       workdaysInMonth: fields.workdaysInMonth,
       dailyHours: fields.dailyHours,
       taxRatePercent: fields.taxRatePercent,

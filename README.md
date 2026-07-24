@@ -18,11 +18,30 @@ Built directly from a payroll overtime-type (ВидОтПР) reference table:
 
 ## How it works
 
-### Hourly rate
+### Salary basis: gross or net
+
+The monthly salary field has a toggle — **До вычета** (gross, before tax) or
+**На руки** (net, take-home) — since not everyone knows their gross figure,
+only what actually lands on their card. Whichever one is entered:
 
 ```
-hourly rate = monthly gross salary / workdays in that month / daily working hours
+hourly rate = monthly salary / workdays in that month / daily working hours
 ```
+
+is computed the same way regardless of basis — the salary is used exactly
+as given, so this is a **gross hourly rate** when the toggle is set to
+"До вычета", or a **net hourly rate** when set to "На руки". Overtime pay
+per entry (`hourly rate × payable hours × category multiplier`) is
+therefore in that same basis. The app then converts the *total* to the
+other basis using the tax rate:
+
+- Given **gross**: `net = gross × (1 − tax rate)` (the original direction).
+- Given **net**: `gross = net ÷ (1 − tax rate)` (grossed up instead).
+
+Both totals are always shown — only which one is *derived* from the other
+changes. The Reverse tab's hourly rate follows the same basis, so it divides
+the payment amount in the matching basis (gross or net) when solving for
+hours, not always gross.
 
 Daily working hours defaults to 9 but is editable. "Workdays in month" has an
 **Auto** button that counts Mon–Fri days for the selected month — override it

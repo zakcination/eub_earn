@@ -158,7 +158,13 @@
   /**
    * Full forward summary: hourly rate, priced entries, totals, tax split.
    * settings: {monthlySalary, workdaysInMonth, dailyHours, taxRatePercent,
+   *            salaryBasis: 'gross'|'net' (default 'gross'),
    *            multipliers: {'0010':n,'0030':n,'0040':n}}
+   *
+   * `monthlySalary` (and so the hourly rate, and each entry's `pay`) is in
+   * whichever basis `salaryBasis` says it is — if the user only knows their
+   * take-home pay, they enter that and set salaryBasis to 'net' instead of
+   * grossing it up themselves. Either way, both totals are returned.
    */
   function computeSummary(entries, settings) {
     var hourlyRate = computeHourlyRate(
@@ -171,16 +177,24 @@
       totalsByCategory[code] = { hours: 0, pay: 0 };
     });
 
-    var totalGrossOvertime = 0;
+    var totalInInputBasis = 0;
     processed.rows.forEach(function (row) {
       totalsByCategory[row.category].hours += row.payableHours;
       totalsByCategory[row.category].pay += row.pay;
-      totalGrossOvertime += row.pay;
+      totalInInputBasis += row.pay;
     });
 
     var taxRate = toNumber(settings.taxRatePercent) / 100;
-    var taxAmount = totalGrossOvertime * taxRate;
-    var netOvertime = totalGrossOvertime - taxAmount;
+    var salaryBasis = settings.salaryBasis === 'net' ? 'net' : 'gross';
+    var totalGrossOvertime, netOvertime;
+    if (salaryBasis === 'net') {
+      netOvertime = totalInInputBasis;
+      totalGrossOvertime = taxRate < 1 ? netOvertime / (1 - taxRate) : netOvertime;
+    } else {
+      totalGrossOvertime = totalInInputBasis;
+      netOvertime = totalGrossOvertime * (1 - taxRate);
+    }
+    var taxAmount = totalGrossOvertime - netOvertime;
 
     return {
       hourlyRate: hourlyRate,
@@ -197,8 +211,13 @@
   /**
    * Reverse calculation: from a payment amount (gross or net) back to the
    * number of overtime hours it implies, given an hourly rate and multiplier.
+   *
+   * `hourlyRateBasis` ('gross'|'net', default 'gross') says which basis the
+   * passed-in hourlyRate is in (it mirrors settings.salaryBasis in
+   * computeSummary) — the payment amount in that SAME basis is what actually
+   * gets divided by hourlyRate*multiplier, so the two stay consistent.
    */
-  function reverseCalculate(paymentAmount, amountType, hourlyRate, multiplier, taxRatePercent) {
+  function reverseCalculate(paymentAmount, amountType, hourlyRate, multiplier, taxRatePercent, hourlyRateBasis) {
     var amount = toNumber(paymentAmount);
     var taxRate = toNumber(taxRatePercent) / 100;
     var gross, net;
@@ -214,7 +233,8 @@
     var rate = toNumber(hourlyRate);
     var mult = toNumber(multiplier);
     var payPerHour = rate * mult;
-    var hours = payPerHour > 0 ? gross / payPerHour : 0;
+    var amountInHourlyRateBasis = hourlyRateBasis === 'net' ? net : gross;
+    var hours = payPerHour > 0 ? amountInHourlyRateBasis / payPerHour : 0;
 
     return {
       grossPayment: gross,
